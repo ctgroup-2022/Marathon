@@ -43,33 +43,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Bind parameters and execute
     if ($stmt->execute([$fullName, $email, $contact, $address, $gender, $dob])) {
         echo "Registration successful!";
-        appendToGoogleSheet([$fullName, $email, $contact, $address, $gender, $dob]);
+        
+        // Fetch the last inserted data
+        $lastId = $db->lastInsertId();
+        $stmt = $db->prepare("SELECT * FROM marathon2025 WHERE id = ?");
+        $stmt->execute([$lastId]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Append data to Google Sheets
+        if ($data) {
+            $sheetData = [$data['full_name'], $data['email'], $data['contact'], $data['address'], $data['gender'], $data['dob']];
+            if (appendToGoogleSheet($sheetData)) {
+                echo "Data successfully added to Google Sheets.";
+            } else {
+                echo "Unable to add data to Google Sheets.";
+            }
+        }
     } else {
         echo "Registration failed. Please try again.";
     }
 }
 
 function appendToGoogleSheet($data) {
-    $client = new Google_Client();
-    $client->setApplicationName('Half Marathon Registration');
-    $client->setScopes(Google_Service_Sheets::SPREADSHEETS);
-    $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
-    $client->setClientSecret($_ENV['GOOGLE_CLIENT_SECRET']);
-    $client->setDeveloperKey($_ENV['GOOGLE_API_KEY']);
-    $client->setAccessType('offline');
+    try {
+        $client = new Google_Client();
+        $client->setApplicationName('Half Marathon Registration');
+        $client->setScopes(Google_Service_Sheets::SPREADSHEETS);
+        $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
+        $client->setClientSecret($_ENV['GOOGLE_CLIENT_SECRET']);
+        $client->setDeveloperKey($_ENV['GOOGLE_API_KEY']);
+        $client->setAccessType('offline');
 
-    $service = new Google_Service_Sheets($client);
-    $spreadsheetId = $_ENV['GOOGLE_SPREADSHEET_ID'];
-    $range = 'Sheet1!A1:F1'; // Replace with your sheet name and range
+        $service = new Google_Service_Sheets($client);
+        $spreadsheetId = $_ENV['GOOGLE_SPREADSHEET_ID'];
+        $range = 'Sheet1!A1:F1'; // Replace with your sheet name and range
 
-    $values = [$data];
-    $body = new Google_Service_Sheets_ValueRange([
-        'values' => $values
-    ]);
-    $params = [
-        'valueInputOption' => 'RAW'
-    ];
+        $values = [$data];
+        $body = new Google_Service_Sheets_ValueRange([
+            'values' => $values
+        ]);
+        $params = [
+            'valueInputOption' => 'RAW'
+        ];
 
-    $service->spreadsheets_values->append($spreadsheetId, $range, $body, $params);
+        $service->spreadsheets_values->append($spreadsheetId, $range, $body, $params);
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
 }
 ?>
