@@ -3,8 +3,8 @@
 // Database configuration
 $host = "localhost";
 $dbname = "cthalfmarathon";
-$username = "Marathon2025";
-$password = "MCg7J1pGiKl";
+$username = "Marathon2025NEW";
+$password = "]qCG}}-N{Emu";
 
 try {
     $db = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
