@@ -1,19 +1,11 @@
 <?php
-require 'vendor/autoload.php';
-
-use Dotenv\Dotenv;
-
-// Load environment variables from .env file
-$dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->load();
 
 // Database configuration
-$host = $_ENV['DB_HOST'];
-$dbname = $_ENV['DB_NAME'];
-$username = $_ENV['DB_USERNAME'];
-$password = $_ENV['DB_PASSWORD'];
+$host = "localhost";
+$dbname = "cthalfmarathon";
+$username = "Marathon2025";
+$password = "MCg7J1pGiKl";
 
-// Create a new PDO instance
 try {
     $db = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -36,60 +28,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         return;
     }
 
-    // Prepare SQL statement
-    $sql = "INSERT INTO marathon2025 (full_name, email, contact, address, gender, dob) VALUES (?, ?, ?, ?, ?, ?)";
-    $stmt = $db->prepare($sql);
+    // Insert into database
+    try {
+        $sql = "INSERT INTO marathon2025 (full_name, email, contact, address, gender, dob) VALUES (?, ?, ?, ?, ?, ?)";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$fullName, $email, $contact, $address, $gender, $dob]);
 
-    // Bind parameters and execute
-    if ($stmt->execute([$fullName, $email, $contact, $address, $gender, $dob])) {
-        echo "Registration successful!";
-        
+        echo "Registration successful!<br>";
+
         // Fetch the last inserted data
         $lastId = $db->lastInsertId();
         $stmt = $db->prepare("SELECT * FROM marathon2025 WHERE id = ?");
         $stmt->execute([$lastId]);
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Append data to Google Sheets
         if ($data) {
-            $sheetData = [$data['full_name'], $data['email'], $data['contact'], $data['address'], $data['gender'], $data['dob']];
-            if (appendToGoogleSheet($sheetData)) {
-                echo "Data successfully added to Google Sheets.";
-            } else {
-                echo "Unable to add data to Google Sheets.";
-            }
+            echo "Data successfully added to the database.";
         }
-    } else {
-        echo "Registration failed. Please try again.";
-    }
-}
-
-function appendToGoogleSheet($data) {
-    try {
-        $client = new Google_Client();
-        $client->setApplicationName('Half Marathon Registration');
-        $client->setScopes(Google_Service_Sheets::SPREADSHEETS);
-        $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
-        $client->setClientSecret($_ENV['GOOGLE_CLIENT_SECRET']);
-        $client->setDeveloperKey($_ENV['GOOGLE_API_KEY']);
-        $client->setAccessType('offline');
-
-        $service = new Google_Service_Sheets($client);
-        $spreadsheetId = $_ENV['GOOGLE_SPREADSHEET_ID'];
-        $range = 'Sheet1!A1:F1'; // Replace with your sheet name and range
-
-        $values = [$data];
-        $body = new Google_Service_Sheets_ValueRange([
-            'values' => $values
-        ]);
-        $params = [
-            'valueInputOption' => 'RAW'
-        ];
-
-        $service->spreadsheets_values->append($spreadsheetId, $range, $body, $params);
-        return true;
-    } catch (Exception $e) {
-        return false;
+    } catch (PDOException $e) {
+        die("Registration failed. Please try again.");
     }
 }
 ?>
