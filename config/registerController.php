@@ -21,18 +21,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $address = trim($_POST['address']);
     $gender = trim($_POST['gender']);
     $dob = trim($_POST['dob']);
+    $raceCategory = trim($_POST['raceCategory']);
 
     // Validate input
-    if (empty($fullName) || empty($email) || empty($contact) || empty($address) || empty($gender) || empty($dob)) {
+    if (empty($fullName) || empty($email) || empty($contact) || empty($address) || empty($gender) || empty($dob) || empty($raceCategory)) {
         echo "All fields are required.";
         return;
     }
 
     // Insert into database
     try {
-        $sql = "INSERT INTO marathon2025 (full_name, email, contact, address, gender, dob) VALUES (?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO marathon2025 (full_name, email, contact, address, gender, dob, race_category) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
-        $stmt->execute([$fullName, $email, $contact, $address, $gender, $dob]);
+        $stmt->execute([$fullName, $email, $contact, $address, $gender, $dob, $raceCategory]);
 
         echo "Registration successful!<br>";
 
